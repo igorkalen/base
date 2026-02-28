@@ -8,6 +8,8 @@ import (
 	"mime"
 	"net/http"
 	"net/url"
+	"os"
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -170,13 +172,9 @@ func RegisterServerBuiltins() {
 			fs := http.FileServer(http.Dir(dir.Value))
 
 			mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-				cleanPath := filepath.Clean(r.URL.Path)
-				if cleanPath == "/" || cleanPath == "." {
-					cleanPath = "/index.html"
-				}
+				fullPath := filepath.Join(dir.Value, filepath.Clean(r.URL.Path))
 
-				fullPath := filepath.Join(dir.Value, cleanPath)
-				_, err := ioutil.ReadFile(fullPath)
+				info, err := os.Stat(fullPath)
 				if err != nil {
 					w.Header().Set("Content-Type", "text/html; charset=utf-8")
 					w.WriteHeader(404)
@@ -184,7 +182,13 @@ func RegisterServerBuiltins() {
 					return
 				}
 
-				r.URL.Path = cleanPath
+				if info.IsDir() {
+					indexPath := filepath.Join(fullPath, "index.html")
+					if _, err := os.Stat(indexPath); err == nil {
+						r.URL.Path = path.Join(r.URL.Path, "index.html")
+					}
+				}
+
 				fs.ServeHTTP(w, r)
 			})
 
