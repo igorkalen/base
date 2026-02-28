@@ -133,7 +133,7 @@ func printHelp() {
 	fmt.Printf("  %scrypto%s   uuid, hash, encrypt_file, decrypt_file\n", Cyan, Reset)
 	fmt.Printf("  %ssys%s      exec, timestamp, version\n", Cyan, Reset)
 	fmt.Printf("  %smath%s     abs, sqrt, pow, round, sin, cos, log\n", Cyan, Reset)
-	fmt.Printf("  %sstring%s   upper, lower, replace\n", Cyan, Reset)
+	fmt.Printf("  %sstring%s   upper, lower, replace, slice, pad_left\n", Cyan, Reset)
 	fmt.Printf("  %slist%s     map, filter, sort, contains, length\n", Cyan, Reset)
 	fmt.Printf("  %sencode%s   base64\n", Cyan, Reset)
 	fmt.Printf("  %sdecode%s   base64\n", Cyan, Reset)

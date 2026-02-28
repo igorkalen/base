@@ -195,6 +195,67 @@ func RegisterStdBuiltins() {
 		},
 	}
 
+	builtins["string.slice"] = &object.Builtin{
+		Fn: func(env *object.Environment, args ...object.Object) object.Object {
+			if len(args) < 2 {
+				return newError("wrong number of arguments. got=%d, want=2 or 3", len(args))
+			}
+			s, ok1 := args[0].(*object.String)
+			start, ok2 := args[1].(*object.Integer)
+			if !ok1 || !ok2 {
+				return newError("arguments to `string.slice` must be (STRING, INTEGER)")
+			}
+
+			startVal := int(start.Value)
+			endVal := len(s.Value)
+
+			if len(args) == 3 {
+				if end, ok := args[2].(*object.Integer); ok {
+					endVal = int(end.Value)
+				}
+			}
+
+			if startVal < 0 {
+				startVal = 0
+			}
+			if endVal > len(s.Value) {
+				endVal = len(s.Value)
+			}
+			if startVal > endVal {
+				return &object.String{Value: ""}
+			}
+
+			return &object.String{Value: s.Value[startVal:endVal]}
+		},
+	}
+
+	builtins["string.pad_left"] = &object.Builtin{
+		Fn: func(env *object.Environment, args ...object.Object) object.Object {
+			if len(args) != 3 {
+				return newError("wrong number of arguments. got=%d, want=3", len(args))
+			}
+			s, ok1 := args[0].(*object.String)
+			targetLen, ok2 := args[1].(*object.Integer)
+			padChar, ok3 := args[2].(*object.String)
+
+			if !ok1 || !ok2 || !ok3 {
+				return newError("arguments to `string.pad_left` must be (STRING, INTEGER, STRING)")
+			}
+
+			str := s.Value
+			pad := padChar.Value
+			if len(pad) == 0 {
+				return s
+			}
+
+			for len(str) < int(targetLen.Value) {
+				str = pad + str
+			}
+
+			return &object.String{Value: str}
+		},
+	}
+
 	builtins["wait_all"] = &object.Builtin{
 		Fn: func(env *object.Environment, args ...object.Object) object.Object {
 			env.Root().Wait()
