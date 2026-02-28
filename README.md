@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo.png" alt="B.A.S.E. Logo" width="300">
+</p>
+
 # B.A.S.E.
 
 B.A.S.E. (Backend Automation & Scripting Environment) is a simple, standalone programming language for writing backend logic and server scripts.
@@ -169,6 +173,10 @@ for let i = 0; i < 5; i = i + 1 {
 
 ## Full list of built-ins
 To see everything the language can do, type `base help` in your terminal. It lists all modules for `http`, `db`, `file`, `math`, `list`, `crypto`, `string`, `csv`, `yaml`, `ws`, `ssh`, and more.
+
+## Contact Me
+
+If you have any questions, feel free to reach out to me at [igor@igorkalen.dev](mailto:igor@igorkalen.dev).
 
 ## Contributing
 
