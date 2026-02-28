@@ -9,7 +9,7 @@ It's built in Go and compiles to a single 22MB binary. There are no dependencies
 Run this to download the binary and install it to `/usr/local/bin`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/IgorKalen/base/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/igorkalen/base/main/install.sh | bash
 ```
 
 Check if it works:
@@ -170,7 +170,7 @@ To see everything the language can do, type `base help` in your terminal. It lis
 
 ## Contributing
 
-1. Clone the repo: `git clone https://github.com/IgorKalen/base.git`
+1. Clone the repo: `git clone https://github.com/igorkalen/base.git`
 2. Install dependencies: `go mod download`
 3. Make changes (built-ins are in `/evaluator`, language rules are in `/parser` and `/lexer`)
 4. Test it locally: `go run main.go tests/my_test.base`
