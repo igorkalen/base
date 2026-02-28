@@ -4,9 +4,9 @@ import "base/token"
 
 type Lexer struct {
 	input        string
-	position     int  
-	readPosition int  
-	ch           byte 
+	position     int
+	readPosition int
+	ch           byte
 }
 
 func New(input string) *Lexer {
@@ -146,13 +146,32 @@ func (l *Lexer) eatWhitespaceAndComments() {
 	for {
 		if l.ch == ' ' || l.ch == '\t' || l.ch == '\n' || l.ch == '\r' {
 			l.readChar()
-		} else if l.ch == '/' && l.peekChar() == '/' {
-			for l.ch != '\n' && l.ch != 0 {
-				l.readChar()
-			}
-		} else {
-			break
+			continue
 		}
+
+		if l.ch == '/' {
+			if l.peekChar() == '/' {
+				l.readChar()
+				l.readChar()
+				for l.ch != '\n' && l.ch != 0 {
+					l.readChar()
+				}
+				continue
+			}
+			if l.peekChar() == '*' {
+				l.readChar()
+				l.readChar()
+				for !(l.ch == '*' && l.peekChar() == '/') && l.ch != 0 {
+					l.readChar()
+				}
+				if l.ch == '*' {
+					l.readChar() // eat *
+					l.readChar() // eat /
+				}
+				continue
+			}
+		}
+		break
 	}
 }
 
@@ -169,7 +188,7 @@ func (l *Lexer) readString(quote byte) string {
 	for {
 		l.readChar()
 		if l.ch == '\\' && l.peekChar() == quote {
-			l.readChar() 
+			l.readChar()
 			continue
 		}
 		if l.ch == quote || l.ch == 0 {
