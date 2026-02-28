@@ -21,9 +21,17 @@ func RegisterDBBuiltins() {
 			if len(args) != 3 {
 				return newError("wrong number of arguments. got=%d, want=3", len(args))
 			}
-			alias := args[0].(*object.String).Value
-			driver := args[1].(*object.String).Value
-			dsn := args[2].(*object.String).Value
+			aliasObj, ok1 := args[0].(*object.String)
+			driverObj, ok2 := args[1].(*object.String)
+			dsnObj, ok3 := args[2].(*object.String)
+
+			if !ok1 || !ok2 || !ok3 {
+				return newError("arguments to `db.connect` must be (STRING, STRING, STRING)")
+			}
+
+			alias := aliasObj.Value
+			driver := driverObj.Value
+			dsn := dsnObj.Value
 
 			if driver == "mongodb" {
 				client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(dsn))
@@ -47,8 +55,13 @@ func RegisterDBBuiltins() {
 			if len(args) < 2 {
 				return newError("wrong number of arguments. got=%d, want=2+", len(args))
 			}
-			alias := args[0].(*object.String).Value
-			query := args[1].(*object.String).Value
+			aliasObj, ok1 := args[0].(*object.String)
+			queryObj, ok2 := args[1].(*object.String)
+			if !ok1 || !ok2 {
+				return newError("first two arguments to `db.exec` must be STRING")
+			}
+			alias := aliasObj.Value
+			query := queryObj.Value
 			conn, exists := dbConnections[alias]
 			if !exists {
 				return newError("no connection found: %s", alias)
@@ -74,8 +87,13 @@ func RegisterDBBuiltins() {
 			if len(args) < 3 {
 				return newError("wrong number of arguments. got=%d, want=3", len(args))
 			}
-			alias := args[0].(*object.String).Value
-			target := args[1].(*object.String).Value
+			aliasObj, ok1 := args[0].(*object.String)
+			targetObj, ok2 := args[1].(*object.String)
+			if !ok1 || !ok2 {
+				return newError("first two arguments to `db.insert` must be STRING")
+			}
+			alias := aliasObj.Value
+			target := targetObj.Value
 			data := args[2]
 
 			conn, exists := dbConnections[alias]
@@ -118,7 +136,11 @@ func RegisterDBBuiltins() {
 			if len(args) < 2 {
 				return newError("wrong number of arguments. got=%d, want=2+", len(args))
 			}
-			alias := args[0].(*object.String).Value
+			aliasObj, ok1 := args[0].(*object.String)
+			if !ok1 {
+				return newError("first argument to `db.query` must be STRING")
+			}
+			alias := aliasObj.Value
 			conn, exists := dbConnections[alias]
 			if !exists {
 				return newError("no connection for alias: %s", alias)
@@ -126,7 +148,11 @@ func RegisterDBBuiltins() {
 
 			switch c := conn.(type) {
 			case *sql.DB:
-				query := args[1].(*object.String).Value
+				queryObj, ok := args[1].(*object.String)
+				if !ok {
+					return newError("second argument to SQL `db.query` must be STRING")
+				}
+				query := queryObj.Value
 				goArgs := make([]interface{}, len(args)-2)
 				for i, arg := range args[2:] {
 					goArgs[i] = baseObjectToGoType(arg)
@@ -175,8 +201,13 @@ func RegisterDBBuiltins() {
 			if len(args) < 4 {
 				return newError("wrong number of arguments. got=%d, want=4", len(args))
 			}
-			alias := args[0].(*object.String).Value
-			target := args[1].(*object.String).Value
+			aliasObj, ok1 := args[0].(*object.String)
+			targetObj, ok2 := args[1].(*object.String)
+			if !ok1 || !ok2 {
+				return newError("first two arguments to `db.update` must be STRING")
+			}
+			alias := aliasObj.Value
+			target := targetObj.Value
 			match := baseObjectToGoType(args[2])
 			update := baseObjectToGoType(args[3])
 
@@ -224,8 +255,13 @@ func RegisterDBBuiltins() {
 			if len(args) < 3 {
 				return newError("wrong number of arguments. got=%d, want=3", len(args))
 			}
-			alias := args[0].(*object.String).Value
-			target := args[1].(*object.String).Value
+			aliasObj, ok1 := args[0].(*object.String)
+			targetObj, ok2 := args[1].(*object.String)
+			if !ok1 || !ok2 {
+				return newError("first two arguments to `db.insert_many` must be STRING")
+			}
+			alias := aliasObj.Value
+			target := targetObj.Value
 			arr, ok := args[2].(*object.Array)
 			if !ok {
 				return newError("third argument to `db.insert_many` must be ARRAY")
@@ -235,7 +271,6 @@ func RegisterDBBuiltins() {
 			switch c := conn.(type) {
 			case *sql.DB:
 				for _, el := range arr.Elements {
-					RegisterDBBuiltins() 
 					builtins["db.insert"].Fn(env, args[0], args[1], el)
 				}
 			case *mongo.Client:

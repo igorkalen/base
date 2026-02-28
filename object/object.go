@@ -82,6 +82,7 @@ type Environment struct {
 	store map[string]Object
 	outer *Environment
 	wg    *sync.WaitGroup
+	mu    sync.RWMutex
 }
 
 func NewEnvironment() *Environment {
@@ -121,7 +122,10 @@ func (e *Environment) Wait() {
 }
 
 func (e *Environment) Get(name string) (Object, bool) {
+	e.mu.RLock()
 	obj, ok := e.store[name]
+	e.mu.RUnlock()
+
 	if !ok && e.outer != nil {
 		obj, ok = e.outer.Get(name)
 	}
@@ -129,11 +133,15 @@ func (e *Environment) Get(name string) (Object, bool) {
 }
 
 func (e *Environment) Set(name string, val Object) Object {
+	e.mu.Lock()
+	defer e.mu.Unlock()
 	e.store[name] = val
 	return val
 }
 
 func (e *Environment) Export() *Hash {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 	pairs := make(map[string]Object)
 	for k, v := range e.store {
 		pairs[k] = v
@@ -142,16 +150,20 @@ func (e *Environment) Export() *Hash {
 }
 
 func (e *Environment) Update(name string, val Object) Object {
-
+	e.mu.Lock()
 	if _, ok := e.store[name]; ok {
 		e.store[name] = val
+		e.mu.Unlock()
 		return val
 	}
+	e.mu.Unlock()
 
 	if e.outer != nil {
 		return e.outer.Update(name, val)
 	}
 
+	e.mu.Lock()
+	defer e.mu.Unlock()
 	e.store[name] = val
 	return val
 }

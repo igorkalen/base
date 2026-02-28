@@ -159,10 +159,11 @@ func RegisterStdBuiltins() {
 			if len(args) != 1 {
 				return newError("wrong number of arguments. got=%d, want=1", len(args))
 			}
+			inputStr := args[0].Inspect()
 			if s, ok := args[0].(*object.String); ok {
-				return &object.String{Value: strings.ToUpper(s.Value)}
+				inputStr = s.Value
 			}
-			return newError("argument to `string.upper` must be STRING")
+			return &object.String{Value: strings.ToUpper(inputStr)}
 		},
 	}
 
@@ -171,10 +172,11 @@ func RegisterStdBuiltins() {
 			if len(args) != 1 {
 				return newError("wrong number of arguments. got=%d, want=1", len(args))
 			}
+			inputStr := args[0].Inspect()
 			if s, ok := args[0].(*object.String); ok {
-				return &object.String{Value: strings.ToLower(s.Value)}
+				inputStr = s.Value
 			}
-			return newError("argument to `string.lower` must be STRING")
+			return &object.String{Value: strings.ToLower(inputStr)}
 		},
 	}
 
@@ -200,14 +202,20 @@ func RegisterStdBuiltins() {
 			if len(args) < 2 {
 				return newError("wrong number of arguments. got=%d, want=2 or 3", len(args))
 			}
-			s, ok1 := args[0].(*object.String)
+
+			// Auto-convert first argument to string
+			inputStr := args[0].Inspect()
+			if s, ok := args[0].(*object.String); ok {
+				inputStr = s.Value
+			}
+
 			start, ok2 := args[1].(*object.Integer)
-			if !ok1 || !ok2 {
-				return newError("arguments to `string.slice` must be (STRING, INTEGER)")
+			if !ok2 {
+				return newError("second argument to `string.slice` must be INTEGER")
 			}
 
 			startVal := int(start.Value)
-			endVal := len(s.Value)
+			endVal := len(inputStr)
 
 			if len(args) == 3 {
 				if end, ok := args[2].(*object.Integer); ok {
@@ -215,17 +223,18 @@ func RegisterStdBuiltins() {
 				}
 			}
 
+			// Bounds safety
 			if startVal < 0 {
 				startVal = 0
 			}
-			if endVal > len(s.Value) {
-				endVal = len(s.Value)
+			if endVal > len(inputStr) {
+				endVal = len(inputStr)
 			}
 			if startVal > endVal {
 				return &object.String{Value: ""}
 			}
 
-			return &object.String{Value: s.Value[startVal:endVal]}
+			return &object.String{Value: inputStr[startVal:endVal]}
 		},
 	}
 

@@ -449,6 +449,9 @@ func doHTTPRequest(method string, urlStr string, body object.Object, opts *objec
 			if hash, ok := body.(*object.Hash); ok {
 				jsonBytes, _ := json.Marshal(baseObjectToGoType(hash))
 				bodyReader = bytes.NewBuffer(jsonBytes)
+			} else if arr, ok := body.(*object.Array); ok {
+				jsonBytes, _ := json.Marshal(baseObjectToGoType(arr))
+				bodyReader = bytes.NewBuffer(jsonBytes)
 			} else if str, ok := body.(*object.String); ok {
 				bodyReader = bytes.NewBufferString(str.Value)
 			} else {
