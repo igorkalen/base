@@ -18,6 +18,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 )
 
 const (
@@ -356,7 +357,14 @@ func registerImportHandler() {
 }
 
 func checkVersion(quiet bool) {
-	resp, err := http.Get("https://api.github.com/repos/igorkalen/base/releases/latest")
+	client := &http.Client{
+		Timeout: 3 * time.Second,
+	}
+
+	req, _ := http.NewRequest("GET", "https://api.github.com/repos/igorkalen/base/releases/latest", nil)
+	req.Header.Set("User-Agent", "B.A.S.E.-CLI")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		if !quiet {
 			fmt.Printf("%sError checking for updates: %s%s\n", Red, err, Reset)
@@ -364,6 +372,10 @@ func checkVersion(quiet bool) {
 		return
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return
+	}
 
 	var release struct {
 		TagName string `json:"tag_name"`
@@ -385,17 +397,33 @@ func checkVersion(quiet bool) {
 
 func updateBase() {
 	fmt.Printf("%sChecking for updates...%s\n", Blue, Reset)
-	resp, err := http.Get("https://api.github.com/repos/igorkalen/base/releases/latest")
+
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	req, _ := http.NewRequest("GET", "https://api.github.com/repos/igorkalen/base/releases/latest", nil)
+	req.Header.Set("User-Agent", "B.A.S.E.-CLI")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Printf("%sError checking for updates: %s%s\n", Red, err, Reset)
 		return
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != 200 {
+		fmt.Printf("%sError: GitHub API returned status %d%s\n", Red, resp.StatusCode, Reset)
+		return
+	}
+
 	var release struct {
 		TagName string `json:"tag_name"`
 	}
-	json.NewDecoder(resp.Body).Decode(&release)
+	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
+		fmt.Printf("%sError parsing update info.%s\n", Red, Reset)
+		return
+	}
 
 	latest := strings.TrimPrefix(release.TagName, "v")
 	current := strings.TrimPrefix(object.VERSION, "v")
