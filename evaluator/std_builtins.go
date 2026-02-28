@@ -234,18 +234,24 @@ func RegisterStdBuiltins() {
 			if len(args) != 3 {
 				return newError("wrong number of arguments. got=%d, want=3", len(args))
 			}
-			s, ok1 := args[0].(*object.String)
+
+			// Auto-convert first argument to string
+			inputStr := args[0].Inspect()
+			if s, ok := args[0].(*object.String); ok {
+				inputStr = s.Value
+			}
+
 			targetLen, ok2 := args[1].(*object.Integer)
 			padChar, ok3 := args[2].(*object.String)
 
-			if !ok1 || !ok2 || !ok3 {
-				return newError("arguments to `string.pad_left` must be (STRING, INTEGER, STRING)")
+			if !ok2 || !ok3 {
+				return newError("arguments to `string.pad_left` must be (ANY, INTEGER, STRING)")
 			}
 
-			str := s.Value
+			str := inputStr
 			pad := padChar.Value
 			if len(pad) == 0 {
-				return s
+				return &object.String{Value: str}
 			}
 
 			for len(str) < int(targetLen.Value) {
