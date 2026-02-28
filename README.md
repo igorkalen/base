@@ -60,6 +60,10 @@ server.listen(3000, "/api", function(req, res) {
         res.send(200, {"message": "Server is running"})
     }
 })
+
+// CRITICAL: Servers and cron jobs run natively in the background. 
+// You must keep the main script alive so it doesn't immediately exit!
+wait(999999)
 ```
 
 ### HTTP Client
@@ -130,6 +134,8 @@ Run functions automatically on a schedule.
 schedule("0 * * * *", function() {
     log("Running hourly task", "INFO")
 })
+
+wait(999999) // Keep the script alive
 ```
 
 ---
