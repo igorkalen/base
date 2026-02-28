@@ -1,0 +1,35 @@
+{
+    "name": "base-vscode",
+    "displayName": "B.A.S.E. Language Support",
+    "description": "Syntax highlighting and language support for the B.A.S.E. programming language.",
+    "version": "0.1.0",
+    "publisher": "igorkalen",
+    "engines": {
+        "vscode": "^1.75.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [
+            {
+                "id": "base",
+                "aliases": [
+                    "B.A.S.E.",
+                    "base"
+                ],
+                "extensions": [
+                    ".base"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "base",
+                "scopeName": "source.base",
+                "path": "./syntaxes/base.tmLanguage.json"
+            }
+        ]
+    }
+}

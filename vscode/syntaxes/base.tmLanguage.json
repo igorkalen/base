@@ -1,0 +1,80 @@
+{
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "name": "B.A.S.E.",
+    "patterns": [
+        {
+            "include": "#keywords"
+        },
+        {
+            "include": "#strings"
+        },
+        {
+            "include": "#comments"
+        },
+        {
+            "include": "#numbers"
+        },
+        {
+            "include": "#builtins"
+        }
+    ],
+    "repository": {
+        "keywords": {
+            "patterns": [
+                {
+                    "name": "keyword.control.base",
+                    "match": "\\b(if|else|foreach|in|return|while|break|continue|spawn|try|catch|wait|wait_all)\\b"
+                },
+                {
+                    "name": "keyword.declaration.base",
+                    "match": "\\b(let|function)\\b"
+                },
+                {
+                    "name": "constant.language.base",
+                    "match": "\\b(true|false|null)\\b"
+                }
+            ]
+        },
+        "strings": {
+            "name": "string.quoted.double.base",
+            "begin": "\"",
+            "end": "\"",
+            "patterns": [
+                {
+                    "name": "constant.character.escape.base",
+                    "match": "\\\\."
+                }
+            ]
+        },
+        "comments": {
+            "patterns": [
+                {
+                    "name": "comment.line.double-slash.base",
+                    "match": "//.*$"
+                },
+                {
+                    "name": "comment.block.base",
+                    "begin": "/\\*",
+                    "end": "\\*/"
+                }
+            ]
+        },
+        "numbers": {
+            "patterns": [
+                {
+                    "name": "constant.numeric.base",
+                    "match": "\\b[0-9]+(\\.[0-9]+)?\\b"
+                }
+            ]
+        },
+        "builtins": {
+            "patterns": [
+                {
+                    "name": "support.function.builtin.base",
+                    "match": "\\b(http|db|server|file|crypto|math|string|list|csv|yaml|encode|decode|sys|env|ssh|notify|schedule|chan|log|print|type)\\b"
+                }
+            ]
+        }
+    ],
+    "scopeName": "source.base"
+}
