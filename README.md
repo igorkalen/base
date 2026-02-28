@@ -110,6 +110,8 @@ wait_all()
 print(results.read_all())
 ```
 
+> **Note on Background Tasks:** B.A.S.E. has an **Auto Keep-Alive** system. If you start an HTTP server or schedule a cron job, the engine automatically detects it and keeps your script running forever. You never have to write messy `while true` or `wait()` loops to prevent your app from exiting!
+
 ### Files & Encryption
 Read/write files, generate UUIDs, and encrypt files using AES-256-GCM.
 
