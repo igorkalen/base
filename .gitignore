@@ -1,0 +1,38 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+base
+base-darwin-*
+base-linux-*
+base-windows-*
+
+# Tests
+*.test
+*.out
+*.prof
+
+# System
+.DS_Store
+.DS_Store?
+._*
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Data
+*.db
+*.log
+*.tmp
+*.base
+!main.base
+base_temp.json
+.env
+
+# Editors
+.idea
+.vscode
+*.swp
+*.swo
