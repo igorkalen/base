@@ -6,15 +6,29 @@ import (
 	"base/object"
 	"base/parser"
 	"base/repl"
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
 	"os/user"
 	"path/filepath"
 	"strings"
 	"syscall"
+)
+
+const (
+	Reset  = "\033[0m"
+	Red    = "\033[31m"
+	Green  = "\033[32m"
+	Yellow = "\033[33m"
+	Blue   = "\033[34m"
+	Purple = "\033[35m"
+	Cyan   = "\033[36m"
+	Gray   = "\033[37m"
 )
 
 func main() {
@@ -28,6 +42,9 @@ func main() {
 	switch arg {
 	case "-v", "--version":
 		fmt.Printf("B.A.S.E. version %s\n", object.VERSION)
+		checkVersion(false)
+	case "update", "--update":
+		updateBase()
 	case "-e":
 		if len(os.Args) < 3 {
 			fmt.Println("Usage: base -e \"code\"")
@@ -68,8 +85,9 @@ func startREPL() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Hello %s! This is the B.A.S.E. programming language (v%s)!\n", user.Username, object.VERSION)
-	fmt.Println("Type 'exit' to quit. Use 'base help' for commands.")
+	fmt.Printf("%sHello %s!%s This is the %sB.A.S.E.%s programming language (%sv%s%s)!\n", Cyan, user.Username, Reset, Purple, Reset, Gray, object.VERSION, Reset)
+	fmt.Printf("Type %sexit%s to quit. Use %sbase help%s for commands.\n", Red, Reset, Yellow, Reset)
+	checkVersion(true)
 	registerAllBuiltins()
 	registerImportHandler()
 	repl.Start(os.Stdin, os.Stdout)
@@ -92,127 +110,39 @@ func registerAllBuiltins() {
 }
 
 func printHelp() {
-	help := `
-B.A.S.E. - Backend Automation & Scripting Environment (v` + object.VERSION + `)
+	fmt.Printf("\n%sB.A.S.E.%s - %sBackend Automation & Scripting Environment%s (%sv%s%s)\n\n", Purple, Reset, Gray, Reset, Cyan, object.VERSION, Reset)
 
-USAGE:
-  base                          Start interactive REPL
-  base <script.base>            Run a script file
-  base -e "code"                Evaluate a one-liner
-  base -v, --version            Print version
-  base help                     Show this help menu
-  base check <file.base>        Check syntax without executing
-  base new <name>               Scaffold a new project
-  base run                      Run project from base.json
-  base uninstall                Remove base from system
+	fmt.Printf("%sUSAGE:%s\n", Yellow, Reset)
+	fmt.Printf("  base                          Start interactive REPL\n")
+	fmt.Printf("  base <script.base>            Run a script file\n")
+	fmt.Printf("  base -e \"code\"                Evaluate a one-liner\n")
+	fmt.Printf("  base -v, --version            Print version\n")
+	fmt.Printf("  base update                   Update B.A.S.E. to latest version\n")
+	fmt.Printf("  base help                     Show this help menu\n")
+	fmt.Printf("  base check <file.base>        Check syntax without executing\n")
+	fmt.Printf("  base new <name>               Scaffold a new project\n")
+	fmt.Printf("  base run                      Run project from base.json\n")
+	fmt.Printf("  base uninstall                Remove base from system\n\n")
 
-BUILT-IN MODULES:
-  http.get(url, opts?)          GET request with optional headers/timeout/retries
-  http.post(url, body, opts?)   POST request
-  http.put(url, body, opts?)    PUT request
-  http.patch(url, body, opts?)  PATCH request
-  http.delete(url, opts?)       DELETE request
-  http.ping(url, opts?)         Lightweight health check (returns ok, status, latency)
+	fmt.Printf("%sCORE MODULES:%s\n", Yellow, Reset)
+	fmt.Printf("  %shttp%s     get, post, put, patch, delete, ping\n", Cyan, Reset)
+	fmt.Printf("  %sdb%s       connect, query, insert, update, delete, exec, aggregate\n", Cyan, Reset)
+	fmt.Printf("  %sserver%s   listen, static\n", Cyan, Reset)
+	fmt.Printf("  %sfile%s     read, write, append, exists, delete, list, mkdir, replace\n", Cyan, Reset)
+	fmt.Printf("  %scrypto%s   uuid, hash, encrypt_file, decrypt_file\n", Cyan, Reset)
+	fmt.Printf("  %ssys%s      exec, timestamp, version\n", Cyan, Reset)
+	fmt.Printf("  %sssh%s      exec remote commands\n", Cyan, Reset)
+	fmt.Printf("  %snotify%s   discord, email\n", Cyan, Reset)
+	fmt.Printf("  %sschedule%s recurring jobs\n", Cyan, Reset)
+	fmt.Printf("  %schan%s     thread-safe channels\n\n", Cyan, Reset)
 
-  db.connect(alias, type, dsn)  Connect to SQLite/MySQL/PostgreSQL/MongoDB
-  db.query(alias, sql, args..)  Query a database
-  db.insert(alias, table, data) Insert a record
-  db.update(alias, tbl, w, d)   Update records
-  db.delete(alias, tbl, where)  Delete records
-  db.exec(alias, sql)           Execute raw SQL
-  db.insert_many(a, tbl, arr)   Bulk insert
-  db.aggregate(a, coll, pipe)   MongoDB aggregation
+	fmt.Printf("%sEXAMPLES:%s\n", Yellow, Reset)
+	fmt.Printf("  base script.base              Run a script\n")
+	fmt.Printf("  base -e \"print(1 + 2)\"        Quick math\n")
+	fmt.Printf("  base check app.base           Lint your code\n")
+	fmt.Printf("  base new my-api               Start a new project\n\n")
 
-  server.listen(port, path, fn) Start HTTP server with handler
-  server.static(port, dir)      Serve static files (HTML/CSS/JS)
-
-  file.read(path)               Read file contents
-  file.write(path, data)        Write to file
-  file.append(path, data)       Append to file
-  file.exists(path)             Check if file exists
-  file.delete(path)             Delete file or directory
-  file.list(path)               List directory contents
-  file.mkdir(path)              Create directories
-  file.replace(path, old, new)  Find and replace in file
-  file.json_update(path, data)  Merge data into JSON file
-
-  crypto.uuid()                 Generate UUID v4
-  crypto.hash(data)             SHA256 hash
-  crypto.encrypt_file(alg,f,k)  AES-256-GCM file encryption
-  crypto.decrypt_file(alg,d,k)  AES-256-GCM decryption
-  encode.base64(data)           Base64 encode
-  decode.base64(data)           Base64 decode
-
-  math.abs(n)                   Absolute value
-  math.sqrt(n)                  Square root
-  math.pow(base, exp)           Power
-  math.round(n)                 Round to nearest integer
-  math.sin(n)                   Sine
-  math.cos(n)                   Cosine
-  math.log(n)                   Log base 10
-
-  string.upper(s)               Uppercase
-  string.lower(s)               Lowercase
-  string.replace(s, old, new)   Find and replace
-
-  list.map(arr, fn)             Transform each element
-  list.filter(arr, fn)          Filter elements
-  list.sort(arr)                Sort elements
-  list.contains(arr, val)       Check if contains
-  list.length(arr)              Array length
-
-  csv.read(path)                Parse CSV file
-  yaml.write(path, data)        Write YAML file
-
-  ws.connect(url, fn)           WebSocket client with message callback
-  chan()                         Thread-safe channel (.send, .read_all)
-
-  sys.exec(cmd, args..)         Execute shell command
-  sys.timestamp(fmt?)           Current timestamp
-  sys.version()                 Language version
-  env.get(name)                 Get environment variable
-  type(value)                   Get type name of a value
-
-  ssh.exec(host, user, key, cmd) Execute remote SSH command
-  notify.discord(webhook, msg)   Send Discord notification
-  notify.email(host,port,u,p,..) Send email via SMTP
-
-  schedule(cron, fn)            Schedule a recurring job
-  archive.zip(src, dest)        Create ZIP archive
-  wait(seconds)                 Pause execution
-  wait_all()                    Wait for all spawned tasks
-  log(msg, level?)              Structured logging
-  print(args..)                 Print to stdout
-
-OPTIONS HASH (for HTTP methods):
-  { headers: { "Key": "Value" }, timeout: 10, retries: 3 }
-
-RESPONSE OBJECT (for server.listen):
-  res.send(status, body)        Send JSON response
-  res.html(status, content)     Send HTML response
-  res.header(key, value)        Set custom header
-  res.file(status, filepath)    Serve a file with auto MIME type
-
-SYNTAX BASICS:
-  let age = 42                  // Variable declaration
-  let tags = ["api", "db"]      // Array
-  let config = {"port": 8080}   // Dictionary/JSON
-
-  function greet(name) {        // Function
-      return "Hello " + name
-  }
-
-  foreach t in tags {           // Loop
-      print(t)
-  }
-
-EXAMPLES:
-  base script.base              Run a script
-  base -e "print(1 + 2)"        Quick math
-  base check app.base           Lint your code
-  base new my-api               Start a new project
-`
-	fmt.Println(help)
+	fmt.Printf("For full documentation visit: %shttps://github.com/igorkalen/base%s\n\n", Blue, Reset)
 }
 
 func checkFile(filename string) {
@@ -303,15 +233,15 @@ log("Server running at http://localhost:3000");
 `
 	ioutil.WriteFile(filepath.Join(dir, "server.base"), []byte(serverContent), 0644)
 
-	fmt.Printf("✓ Created project '%s'\n", name)
-	fmt.Println("  Files:")
-	fmt.Println("    base.json       — project config")
-	fmt.Println("    main.base       — entry point")
-	fmt.Println("    server.base     — web server")
-	fmt.Println("    public/         — static files (HTML/CSS/JS)")
-	fmt.Printf("\n  Get started:\n")
-	fmt.Printf("    cd %s && base main.base\n", name)
-	fmt.Printf("    cd %s && base server.base\n", name)
+	fmt.Printf("\n%s✓%s Created project '%s%s%s'\n", Green, Reset, Cyan, name, Reset)
+	fmt.Printf("  %sFiles:%s\n", Yellow, Reset)
+	fmt.Printf("    %sbase.json%s       — project config\n", Green, Reset)
+	fmt.Printf("    %smain.base%s       — entry point\n", Green, Reset)
+	fmt.Printf("    %sserver.base%s     — web server\n", Green, Reset)
+	fmt.Printf("    %spublic/%s         — static files (HTML/CSS/JS)\n", Green, Reset)
+	fmt.Printf("\n  %sGet started:%s\n", Yellow, Reset)
+	fmt.Printf("    cd %s && %sbase main.base%s\n", name, Cyan, Reset)
+	fmt.Printf("    cd %s && %sbase server.base%s\n\n", name, Cyan, Reset)
 }
 
 func runFromConfig() {
@@ -422,5 +352,77 @@ func registerImportHandler() {
 		evaluator.Eval(program, env)
 
 		return env.Export(), nil
+	}
+}
+
+func checkVersion(quiet bool) {
+	resp, err := http.Get("https://api.github.com/repos/igorkalen/base/releases/latest")
+	if err != nil {
+		if !quiet {
+			fmt.Printf("%sError checking for updates: %s%s\n", Red, err, Reset)
+		}
+		return
+	}
+	defer resp.Body.Close()
+
+	var release struct {
+		TagName string `json:"tag_name"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
+		return
+	}
+
+	latest := strings.TrimPrefix(release.TagName, "v")
+	current := strings.TrimPrefix(object.VERSION, "v")
+
+	if latest != current {
+		fmt.Printf("\n%s🚀 Update available: %s%s -> %s%s%s\n", Yellow, Reset, current, Green, latest, Reset)
+		fmt.Printf("Run %sbase update%s to upgrade to the latest version.\n\n", Cyan, Reset)
+	} else if !quiet {
+		fmt.Printf("%sB.A.S.E. is already up to date (v%s).%s\n", Green, object.VERSION, Reset)
+	}
+}
+
+func updateBase() {
+	fmt.Printf("%sChecking for updates...%s\n", Blue, Reset)
+	resp, err := http.Get("https://api.github.com/repos/igorkalen/base/releases/latest")
+	if err != nil {
+		fmt.Printf("%sError checking for updates: %s%s\n", Red, err, Reset)
+		return
+	}
+	defer resp.Body.Close()
+
+	var release struct {
+		TagName string `json:"tag_name"`
+	}
+	json.NewDecoder(resp.Body).Decode(&release)
+
+	latest := strings.TrimPrefix(release.TagName, "v")
+	current := strings.TrimPrefix(object.VERSION, "v")
+
+	if latest == current {
+		fmt.Printf("%sB.A.S.E. is already at the latest version (v%s).%s\n", Green, object.VERSION, Reset)
+		return
+	}
+
+	fmt.Printf("A new version is available: %s%s%s\n", Green, latest, Reset)
+	fmt.Printf("Do you want to update? (Y/n): ")
+	reader := bufio.NewReader(os.Stdin)
+	input, _ := reader.ReadString('\n')
+	input = strings.TrimSpace(strings.ToLower(input))
+
+	if input != "" && input != "y" && input != "yes" {
+		fmt.Println("Update cancelled.")
+		return
+	}
+
+	fmt.Printf("%sUpdating B.A.S.E....%s\n", Blue, Reset)
+	cmd := exec.Command("bash", "-c", "curl -fsSL https://raw.githubusercontent.com/igorkalen/base/main/install.sh | bash")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		fmt.Printf("%sUpdate failed: %s%s\n", Red, err, Reset)
+		return
 	}
 }
