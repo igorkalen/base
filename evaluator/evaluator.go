@@ -12,6 +12,7 @@ var (
 	FALSE = &object.Boolean{Value: false}
 
 	ImportHandler func(path string) (object.Object, error)
+	KeepAlive     = false
 )
 
 func Eval(node ast.Node, env *object.Environment) object.Object {

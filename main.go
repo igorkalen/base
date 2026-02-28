@@ -10,9 +10,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"os/user"
 	"path/filepath"
 	"strings"
+	"syscall"
 )
 
 func main() {
@@ -298,7 +300,6 @@ p { color: #888; margin-top: 8px; }
 
 	serverContent := `server.static(3000, "./public");
 log("Server running at http://localhost:3000");
-wait(999999);
 `
 	ioutil.WriteFile(filepath.Join(dir, "server.base"), []byte(serverContent), 0644)
 
@@ -358,6 +359,12 @@ func evalString(input string) {
 		fmt.Println(evaluated.Inspect())
 		os.Exit(1)
 	}
+
+	if evaluator.KeepAlive {
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+		<-quit
+	}
 }
 
 func runFile(filename string) {
@@ -387,6 +394,12 @@ func runFile(filename string) {
 	if evaluated != nil && evaluated.Type() == object.ERROR_OBJ {
 		fmt.Println(evaluated.Inspect())
 		os.Exit(1)
+	}
+
+	if evaluator.KeepAlive {
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+		<-quit
 	}
 }
 

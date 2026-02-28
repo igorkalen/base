@@ -148,6 +148,7 @@ func RegisterServerBuiltins() {
 			mux.HandleFunc(path.Value, handler)
 
 			go func() {
+				KeepAlive = true
 				fmt.Printf("B.A.S.E. Server listening on :%d%s\n", port.Value, path.Value)
 				http.ListenAndServe(fmt.Sprintf(":%d", port.Value), mux)
 			}()
@@ -193,6 +194,7 @@ func RegisterServerBuiltins() {
 			})
 
 			go func() {
+				KeepAlive = true
 				fmt.Printf("B.A.S.E. Static Server on :%d serving %s\n", port.Value, dir.Value)
 				http.ListenAndServe(fmt.Sprintf(":%d", port.Value), mux)
 			}()

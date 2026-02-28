@@ -28,6 +28,7 @@ func RegisterSystemBuiltins() {
 			}
 
 			_, err := globalCron.AddFunc(spec.Value, func() {
+				KeepAlive = true
 				applyFunction(env, fn, []object.Object{})
 			})
 
